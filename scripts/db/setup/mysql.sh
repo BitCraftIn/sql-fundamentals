@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
+alias mysqladmin='mysqladmin --login-path=local'
+alias mysql='mysql --login-path=local'
 echo "\033[0;32mSetting Up MySQL Database. This may take a few minutes...\033[0m"
 echo "\033[1;33m - Removing any existing northwind database (you may need to provide a password)\033[0m"
 mysqladmin -f drop northwind
