@@ -1,7 +1,14 @@
 import { getDb } from '../db/utils';
 import { sql } from '../sql-string';
 
-export const ALL_ORDERS_COLUMNS = ['*'];
+export const ALL_ORDERS_COLUMNS = [
+  'id',
+  'customerid',
+  'employeeid',
+  'shipcity',
+  'shipcountry',
+  'shippeddate'
+];
 export const ORDER_COLUMNS = ['*'];
 
 /**
@@ -41,11 +48,15 @@ export async function getAllOrders(opts = {}) {
     ...DEFAULT_ORDER_COLLECTION_OPTIONS,
     ...opts
   };
+  let orderClauses = '';
+  orderClauses = sql`ORDER BY ${options.sort} ${options.order} LIMIT ${
+    options.perPage
+  } OFFSET ${(options.page - 1) * options.perPage}`;
 
   const db = await getDb();
   return await db.all(sql`
 SELECT ${ALL_ORDERS_COLUMNS.join(',')}
-FROM CustomerOrder`);
+FROM CustomerOrder ${orderClauses}`);
 }
 
 /**
@@ -55,6 +66,9 @@ FROM CustomerOrder`);
  */
 export async function getCustomerOrders(customerId, opts = {}) {
   // ! This is going to retrieve ALL ORDERS, not just the ones that belong to a particular customer. We'll need to fix this
+  if (!opts.sort) {
+    opts.sort = 'shippeddate';
+  }
   return getAllOrders(opts);
 }
 

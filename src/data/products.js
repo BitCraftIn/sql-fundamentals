@@ -40,9 +40,28 @@ const ALL_PRODUCT_COLUMNS = ['*'];
  */
 export async function getAllProducts(opts = {}) {
   const db = await getDb();
-  return await db.all(sql`
+  //   getAllProducts({ filter: { inventory: 'discontinued' } });
+  // getAllProducts({ filter: { inventory: 'needs-reorder' } });
+  let whereClauses = '';
+  if (opts.filter && opts.filter.inventory) {
+    switch (opts.filter.inventory) {
+      case 'discontinued':
+        whereClauses = sql`WHERE discontinued = 1`;
+        break;
+      case 'needs-reorder':
+        whereClauses = sql`WHERE (unitsinstock + unitsonorder) <
+      reorderlevel`;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return await db.all(
+    sql`
 SELECT ${ALL_PRODUCT_COLUMNS.join(',')}
-FROM Product`);
+FROM Product ${whereClauses}`
+  );
 }
 
 /**

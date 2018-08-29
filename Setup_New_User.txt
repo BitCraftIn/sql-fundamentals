@@ -1,0 +1,14 @@
+GRANT ALL PRIVILEGES ON *.* TO 'akshay'@'localhost' IDENTIFIED BY 'qweEWQ123@';
+CREATE USER 'akshay'@'localhost' IDENTIFIED BY 'qweEWQ123@';
+
+GRANT ALL PRIVILEGES ON *.* TO 'akshay'@'localhost' WITH GRANT OPTION;
+mysql_config_editor set --login-path=local --host=localhost --user=akshay --password
+
+
+mysqlshow --login-path=local
+"qweEWQ123@"
+
+ALTER USER 'northwind_user'@'localhost' IDENTIFIED WITH mysql_native_password BY 'theWindi\$bl0wing';
+FLUSH PRIVILEGES;
+
+create user 'northwind_user'@'localhost' IDENTIFIED BY 'theWindi\$bl0wing';
