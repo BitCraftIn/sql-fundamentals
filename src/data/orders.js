@@ -40,7 +40,7 @@ const DEFAULT_ORDER_COLLECTION_OPTIONS = Object.freeze(
  * @param {Partial<OrderCollectionOptions>} opts Options for customizing the query
  * @returns {Promise<Order[]>} the orders
  */
-export async function getAllOrders(opts = {}) {
+export async function getAllOrders(opts = {}, whereClauses) {
   // Combine the options passed into the function with the defaults
 
   /** @type {OrderCollectionOptions} */
@@ -56,7 +56,7 @@ export async function getAllOrders(opts = {}) {
   const db = await getDb();
   return await db.all(sql`
 SELECT ${ALL_ORDERS_COLUMNS.join(',')}
-FROM CustomerOrder ${orderClauses}`);
+FROM CustomerOrder ${whereClauses} ${orderClauses}`);
 }
 
 /**
@@ -69,7 +69,8 @@ export async function getCustomerOrders(customerId, opts = {}) {
   if (!opts.sort) {
     opts.sort = 'shippeddate';
   }
-  return getAllOrders(opts);
+  let whereClauses = sql`WHERE customerid='${customerId}'`;
+  return getAllOrders(opts, whereClauses);
 }
 
 /**
