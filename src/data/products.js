@@ -46,22 +46,24 @@ export async function getAllProducts(opts = {}) {
   if (opts.filter && opts.filter.inventory) {
     switch (opts.filter.inventory) {
       case 'discontinued':
-        whereClauses = sql`WHERE discontinued = 1`;
+        whereClauses = sql`WHERE p.discontinued = 1`;
         break;
       case 'needs-reorder':
-        whereClauses = sql`WHERE (unitsinstock + unitsonorder) <
-      reorderlevel`;
+        whereClauses = sql`WHERE (p.unitsinstock + p.unitsonorder) <
+      p.reorderlevel`;
         break;
       default:
         break;
     }
   }
 
-  return await db.all(
-    sql`
-SELECT ${ALL_PRODUCT_COLUMNS.join(',')}
-FROM Product ${whereClauses}`
-  );
+  let joinClauses = sql`
+  SELECT p.*,c.categoryname , s.contactname as suppliername FROM Product as p 
+  left Join Category as c On  p.categoryid = c.id  
+  left Join Supplier as s On p.supplierid = s.id
+  ${whereClauses}`;
+  // console.log('Hello', await db.all(joinClauses));
+  return await db.all(joinClauses);
 }
 
 /**

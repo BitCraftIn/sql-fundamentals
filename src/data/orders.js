@@ -49,14 +49,20 @@ export async function getAllOrders(opts = {}, whereClauses) {
     ...opts
   };
   let orderClauses = '';
-  orderClauses = sql`ORDER BY ${options.sort} ${options.order} LIMIT ${
+  orderClauses = sql`ORDER BY co.${options.sort} ${options.order} LIMIT ${
     options.perPage
   } OFFSET ${(options.page - 1) * options.perPage}`;
 
+  let joinClauses = '';
+  joinClauses = sql`SELECT ${ALL_ORDERS_COLUMNS.map(
+    x => `co.${x}`
+  )}, c.contactname as customername, e.firstname as employeename 
+  FROM CustomerOrder as co 
+  Left Join Employee as e On co.employeeid = e.id 
+  Left Join Customer as c On co.customerid = c.id 
+  ${whereClauses} ${orderClauses}`;
   const db = await getDb();
-  return await db.all(sql`
-SELECT ${ALL_ORDERS_COLUMNS.join(',')}
-FROM CustomerOrder ${whereClauses} ${orderClauses}`);
+  return await db.all(sql`${joinClauses}`);
 }
 
 /**
@@ -69,7 +75,7 @@ export async function getCustomerOrders(customerId, opts = {}) {
   if (!opts.sort) {
     opts.sort = 'shippeddate';
   }
-  let whereClauses = sql`WHERE customerid='${customerId}'`;
+  let whereClauses = sql`WHERE co.customerid='${customerId}'`;
   return getAllOrders(opts, whereClauses);
 }
 
@@ -80,13 +86,13 @@ export async function getCustomerOrders(customerId, opts = {}) {
  */
 export async function getOrder(id) {
   const db = await getDb();
-  return await db.get(
-    sql`
-SELECT *
-FROM CustomerOrder
-WHERE id = $1`,
-    id
-  );
+  //experiment
+  let joinClauses = sql`SELECT co.*,c.contactname as customername, e.firstname as employeename
+  FROM CustomerOrder as co 
+  Left Join Customer as c On  co.customerid = c.id 
+  Left Join Employee as e On co.employeeid = e.id WHERE co.id = ${id}`;
+  // return await db.get(joinClauses);
+  return await db.get(sql`${joinClauses}`);
 }
 
 /**
@@ -96,13 +102,12 @@ WHERE id = $1`,
  */
 export async function getOrderDetails(id) {
   const db = await getDb();
-  return await db.all(
-    sql`
-SELECT *, unitprice * quantity as price
-FROM OrderDetail
-WHERE orderid = $1`,
-    id
-  );
+  let joinClauses = '';
+  joinClauses = sql`SELECT od.*,od.unitprice * od.quantity as price, p.productname 
+  FROM OrderDetail as od
+  Left Join Product as p On od.productid = p.id
+  WHERE od.orderid = ${id}`;
+  return await db.all(sql`${joinClauses}`);
 }
 
 /**
