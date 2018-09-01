@@ -1,7 +1,14 @@
 import { getDb } from '../db/utils';
 import { sql } from '../sql-string';
 
-export const ALL_ORDERS_COLUMNS = ['*'];
+export const ALL_ORDERS_COLUMNS = [
+  'id',
+  'customerid',
+  'employeeid',
+  'shipcity',
+  'shipcountry',
+  'shippeddate'
+];
 export const ORDER_COLUMNS = ['*'];
 
 /**
@@ -33,7 +40,7 @@ const DEFAULT_ORDER_COLLECTION_OPTIONS = Object.freeze(
  * @param {Partial<OrderCollectionOptions>} opts Options for customizing the query
  * @returns {Promise<Order[]>} the orders
  */
-export async function getAllOrders(opts = {}) {
+export async function getAllOrders(opts = {}, whereClause) {
   // Combine the options passed into the function with the defaults
 
   /** @type {OrderCollectionOptions} */
@@ -41,11 +48,17 @@ export async function getAllOrders(opts = {}) {
     ...DEFAULT_ORDER_COLLECTION_OPTIONS,
     ...opts
   };
+  let whereClauses = '';
+  whereClauses = sql`ORDER BY co.${options.sort} ${options.order} LIMIT ${
+    options.perPage
+  } OFFSET ${(options.page - 1) * options.perPage}`;
 
   const db = await getDb();
   return await db.all(sql`
-SELECT ${ALL_ORDERS_COLUMNS.join(',')}
-FROM CustomerOrder`);
+SELECT ${ALL_ORDERS_COLUMNS.map(x => `co.${x}`).join(
+    ','
+  )},c.contactname AS customername,e.firstname AS employeename
+FROM CustomerOrder  AS co LEFT JOIN   Customer As c ON co.customerid = c.id LEFT JOIN   Employee As e ON co.employeeid = e.id  ${whereClause} ${whereClauses}`);
 }
 
 /**
@@ -55,7 +68,10 @@ FROM CustomerOrder`);
  */
 export async function getCustomerOrders(customerId, opts = {}) {
   // ! This is going to retrieve ALL ORDERS, not just the ones that belong to a particular customer. We'll need to fix this
-  return getAllOrders(opts);
+  if (!opts.sort) {
+    opts.sort = 'shippeddate';
+  }
+  return getAllOrders(opts, sql`WHERE co.customerid='${customerId}'`);
 }
 
 /**
@@ -67,9 +83,11 @@ export async function getOrder(id) {
   const db = await getDb();
   return await db.get(
     sql`
-SELECT *
-FROM CustomerOrder
-WHERE id = $1`,
+SELECT co.*,c.contactname AS customername,e.firstname AS employeename
+FROM CustomerOrder AS co
+LEFT JOIN   Customer AS c ON co.customerid = c.id
+LEFT JOIN   Employee AS e ON co.employeeid = e.id
+WHERE co.id = $1`,
     id
   );
 }
@@ -83,9 +101,10 @@ export async function getOrderDetails(id) {
   const db = await getDb();
   return await db.all(
     sql`
-SELECT *, unitprice * quantity as price
-FROM OrderDetail
-WHERE orderid = $1`,
+SELECT od.*,od.unitprice * od.quantity as price,p.productname
+FROM OrderDetail AS od
+LEFT JOIN   Product As p ON od.productid = p.id
+WHERE od.orderid = $1`,
     id
   );
 }
