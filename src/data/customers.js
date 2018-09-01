@@ -4,7 +4,7 @@ import { sql } from '../sql-string';
 /**
  * Columns to SELECT for the getAllCustomers query
  */
-const ALL_CUSTOMERS_COLUMNS = ['id', 'contactname', 'companyname'];
+const ALL_CUSTOMERS_COLUMNS = ['contactname', 'companyname'];
 
 /**
  * Options that may be used to customize a query for a collection of Customers
@@ -21,16 +21,22 @@ const ALL_CUSTOMERS_COLUMNS = ['id', 'contactname', 'companyname'];
  * @returns {Promise<Customer[]>} A collection of customers
  */
 export async function getAllCustomers(options = {}) {
-  const db = await getDb();
-  let whereClauses = '';
+  let whereClause = '';
   if (options.filter) {
-    whereClauses = sql`WHERE (lower(companyName) like lower("%${
+    whereClause = sql`WHERE lower(c.companyName) LIKE '%${
       options.filter
-    }%")) OR (lower(contactName) like lower("%${options.filter}%")) `;
+    }%' OR lower(c.contactname) LIKE '%${options.filter}%'`;
   }
+  const db = await getDb();
+  //   return await db.all(sql`
+  // SELECT ${ALL_CUSTOMERS_COLUMNS.join(',')}
+  // FROM Customer ${whereClause}`);
   return await db.all(sql`
-SELECT ${ALL_CUSTOMERS_COLUMNS.join(',')}
-FROM Customer ${whereClauses}`);
+ SELECT COUNT(c.id) AS ordercount
+FROM   Customer AS c
+RIGHT JOIN  CustomerOrder  AS co
+ON c.id=co.customerid
+GROUP BY c.id`);
 }
 
 /**

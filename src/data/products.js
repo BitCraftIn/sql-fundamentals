@@ -38,30 +38,25 @@ const ALL_PRODUCT_COLUMNS = ['*'];
  * @param {Partial<ProductCollectionOptions>} opts options that may be used to customize the query
  * @returns {Promise<Product[]>} the products
  */
+// (Product.unitsinstock +  Product.unitsonorder) < Product.reorderlevel
 export async function getAllProducts(opts = {}) {
-  const db = await getDb();
-  //   getAllProducts({ filter: { inventory: 'discontinued' } });
-  // getAllProducts({ filter: { inventory: 'needs-reorder' } });
-  let whereClauses = '';
+  var whereClause = '';
   if (opts.filter && opts.filter.inventory) {
     switch (opts.filter.inventory) {
       case 'discontinued':
-        whereClauses = sql`WHERE discontinued = 1`;
+        whereClause = sql`WHERE p.discontinued = 1`;
         break;
       case 'needs-reorder':
-        whereClauses = sql`WHERE (unitsinstock + unitsonorder) <
-      reorderlevel`;
-        break;
-      default:
+        whereClause = sql`WHERE (p.unitsinstock + p.unitsonorder) < p.reorderlevel`;
         break;
     }
   }
-
-  return await db.all(
-    sql`
-SELECT ${ALL_PRODUCT_COLUMNS.join(',')}
-FROM Product ${whereClauses}`
-  );
+  const db = await getDb();
+  return await db.all(sql`
+SELECT ${ALL_PRODUCT_COLUMNS.map(x => `p.${x}`).join(
+    ','
+  )},c.categoryname AS categoryname,s.contactname AS suppliername
+FROM Product  AS p INNER JOIN   Supplier As s ON p.supplierid = s.id INNER JOIN   Category As c ON p.categoryid = c.id ${whereClause}`);
 }
 
 /**
