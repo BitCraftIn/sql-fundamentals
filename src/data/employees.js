@@ -20,15 +20,17 @@ const ALL_EMPLOYEES_COLUMNS = [
  */
 export async function getAllEmployees() {
   const db = await getDb();
+  // return await db.all(sql`
+  // SELECT ${ALL_EMPLOYEES_COLUMNS.join(',')}
+  // FROM Employee`);
   return await db.all(sql`
-  SELECT ${ALL_EMPLOYEES_COLUMNS.join(',')}
-  FROM Employee`);
-  //   return await db.all(sql`
-  //  SELECT COUNT(e.id) AS ordercount
-  // FROM   Employee AS e
-  // RIGHT JOIN  CustomerOrder  AS co
-  // ON e.id=co.customerid
-  // GROUP BY e.id`);
+   SELECT ${ALL_EMPLOYEES_COLUMNS.map(column => `e.${column}`).join(
+     ','
+   )},COUNT(co.employeeid) AS ordercount
+  FROM   Employee AS e
+  LEFT JOIN  CustomerOrder  AS co
+  ON e.id=co.employeeid
+  GROUP BY e.id`);
 }
 
 /**
