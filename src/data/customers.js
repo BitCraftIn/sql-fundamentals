@@ -28,15 +28,20 @@ export async function getAllCustomers(options = {}) {
     }%' OR lower(c.contactname) LIKE '%${options.filter}%'`;
   }
   const db = await getDb();
+
+  // return await db.all(sql`
+  // SELECT ${ALL_CUSTOMERS_COLUMNS.join(',')}
+  // FROM Customer as c ${whereClause}`);
+
   return await db.all(sql`
-  SELECT ${ALL_CUSTOMERS_COLUMNS.join(',')}
-  FROM Customer as c ${whereClause}`);
-  //   return await db.all(sql`
-  //  SELECT COUNT(c.id) AS ordercount
-  // FROM   Customer AS c
-  // RIGHT JOIN  CustomerOrder  AS co
-  // ON c.id=co.customerid
-  // GROUP BY c.id`);
+   SELECT ${ALL_CUSTOMERS_COLUMNS.map(column => `c.${column}`).join(
+     ','
+   )}, COUNT(co.customerid) AS ordercount
+  FROM   Customer AS c
+  LEFT JOIN  CustomerOrder  AS co
+  ON c.id=co.customerid
+  ${whereClause}
+  GROUP BY c.id`);
 }
 
 /**
