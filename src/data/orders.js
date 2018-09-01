@@ -83,11 +83,14 @@ export async function getOrder(id) {
   const db = await getDb();
   return await db.get(
     sql`
-SELECT co.*,c.contactname AS customername,e.firstname AS employeename
+SELECT co.*,c.contactname AS customername,e.firstname AS employeename,
+SUM((od.unitprice*od.quantity)*(1-od.discount)) as subtotal
 FROM CustomerOrder AS co
 LEFT JOIN   Customer AS c ON co.customerid = c.id
 LEFT JOIN   Employee AS e ON co.employeeid = e.id
-WHERE co.id = $1`,
+LEFT JOIN OrderDetails AS od ON od.orderid = co.id
+WHERE co.id = $1
+GROUP BY od.orderid`,
     id
   );
 }
