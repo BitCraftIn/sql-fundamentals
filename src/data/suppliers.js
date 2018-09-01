@@ -12,11 +12,15 @@ const ALL_SUPPLIERS_COLUMNS = ['id', 'contactname', 'companyname'];
  */
 export async function getAllSuppliers() {
   const db = await getDb();
-  //   SELECT group_concat(productname ORDER BY productname DESC SEPARATOR ', ')
-  // FROM Product;
   return await db.all(sql`
-SELECT ${ALL_SUPPLIERS_COLUMNS.join(',')}
-FROM Supplier`);
+SELECT ${ALL_SUPPLIERS_COLUMNS.map(x => `s.${x}`).join(
+    ','
+  )},group_concat(p.productname ORDER BY p.productname ASC SEPARATOR ', ') As productlist
+FROM Supplier as s
+LEFT JOIN Product as p
+ON s.id = p.supplierid
+GROUP BY s.id
+`);
 }
 
 /**
