@@ -9,13 +9,13 @@ import './helpers/global-hooks';
 class OrderSubtotalTest {
   @test('getOrder() results must now include subtotal')
   public async orderSubtotalPresent() {
-    let orderResult = await getOrder(10248);
+    let orderResult = await getOrder(10250);
     assert.containsAllKeys(orderResult, ['subtotal']);
   }
 
   @test('getOrder() subtotalprice must be the correct amount')
   public async orderSubtotalCorrect() {
-    let [orderResult, orderDetailResults] = await getOrderWithDetails(10248);
+    let [orderResult, orderDetailResults] = await getOrderWithDetails(10250);
     let { subtotal } = orderResult;
     let calculatedPrice = orderDetailResults.reduce((acc, item) => {
       return acc + item.quantity * item.unitprice * (1 - item.discount);

@@ -176,7 +176,7 @@ export async function createOrder(order, details = []) {
 export async function deleteOrder(id) {
   const db = await getDb();
   await db.run(sql`DELETE FROM CustomerOrder WHERE id=$1`, id);
-  await db.run(sql`DELETE FROM OrderDetail WHERE orderid=$1`, id);
+  // await db.run(sql`DELETE FROM OrderDetail WHERE orderid=$1`, id); // this is not required in solution so i comment it
 }
 
 /**
