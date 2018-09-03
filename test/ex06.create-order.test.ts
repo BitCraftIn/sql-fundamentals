@@ -109,7 +109,7 @@ class CreateOrderTest {
     );
     assert.match(
       errorMessages[0].toLowerCase(),
-      /(null constraint)|(cannot be null)/,
+      /(null constraint)|(cannot be null)|(doesn\'t have a default value)/,
       'Error message had to do with a NOT NULL constraint'
     );
     // assert.ok(o, 'returns a promise that resolves to a non-empty vale');

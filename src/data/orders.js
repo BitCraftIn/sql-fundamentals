@@ -130,7 +130,42 @@ export async function getOrderWithDetails(id) {
  * @returns {Promise<{id: string}>} the newly created order
  */
 export async function createOrder(order, details = []) {
-  return Promise.reject('Orders#createOrder() NOT YET IMPLEMENTED');
+  const db = await getDb();
+
+  const nonEmptyColumns = Object.keys(order).filter(column => {
+    if (order[column]) return true;
+    return false;
+  });
+  const values = nonEmptyColumns.map(cname => {
+    let val = order[cname];
+    if (typeof val === 'string') {
+      val = `'${val}'`;
+    }
+    return val;
+  });
+  return db
+    .run(
+      sql`INSERT INTO CustomerOrder
+    (${nonEmptyColumns.join(',')})
+    values
+    (${values.join(',')})`
+    )
+    .then(async r => {
+      let id = 'NOTHING';
+      if (r && r.lastID) {
+        id = r.lastID;
+        const detailsInsertionPromises = details.map(detail => {
+          return db.run(
+            sql`INSERT INTO OrderDetail (id,orderid,productid,unitprice,quantity,discount)
+            values (${id}/${detail.productid},${id},${detail.productid},${detail.unitprice},${
+              detail.quantity
+            },${detail.discount});`
+          );
+        });
+        await Promise.all(detailsInsertionPromises);
+      }
+      return { id };
+    });
 }
 
 /**
@@ -139,7 +174,9 @@ export async function createOrder(order, details = []) {
  * @returns {Promise<any>}
  */
 export async function deleteOrder(id) {
-  return Promise.reject('Orders#deleteOrder() NOT YET IMPLEMENTED');
+  const db = await getDb();
+  await db.run(sql`DELETE FROM CustomerOrder WHERE id=$1`, id);
+  await db.run(sql`DELETE FROM OrderDetail WHERE orderid=$1`, id);
 }
 
 /**
