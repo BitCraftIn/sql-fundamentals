@@ -144,20 +144,19 @@ function sqlObjectProcessor(itemObj) {
  * @param {Array<Pick<OrderDetail, 'productid' | 'quantity' | 'unitprice' | 'discount'>>} details data for any OrderDetail records to associate with this new CustomerOrder
  * @returns {Promise<{id: string}>} the newly created order
  */
-export async function createOrder(order, details = []) {
-  const db = await getDb();
-  const { nonEmptyColumns, values } = sqlObjectProcessor(order);
-
-  await db.run(sql`BEGIN;`);
-  return db
-    .run(
-      sql`INSERT INTO CustomerOrder
+export function createOrder(order, details = []) {
+  return new Promise(async (resolve, reject) => {
+    const db = await getDb();
+    let id = '';
+    try {
+      const { nonEmptyColumns, values } = sqlObjectProcessor(order);
+      await db.run(sql`BEGIN;`);
+      let r = await db.run(
+        sql`INSERT INTO CustomerOrder
     (${nonEmptyColumns.join(',')})
     values
     (${values.join(',')})`
-    )
-    .then(async r => {
-      let id = 'NOTHING';
+      );
       if (r && r.lastID) {
         id = r.lastID;
         const detailsInsertionPromises = details.map(detail => {
@@ -176,16 +175,16 @@ export async function createOrder(order, details = []) {
           );
         });
         await Promise.all(detailsInsertionPromises);
+      } else {
+        throw Error('Inserting CustomerOrder Failed');
       }
-      return { id };
-    })
-    .then(a => {
-      db.run(sql`COMMIT;`);
-      return a;
-    })
-    .catch(e => {
-      db.run(sql`ROLLBACK;`);
-    });
+      await db.run(sql`COMMIT;`);
+      resolve({ id });
+    } catch (e) {
+      await db.run(sql`ROLLBACK;`);
+      reject(e);
+    }
+  });
 }
 
 /**
