@@ -127,6 +127,7 @@ function sqlObjectProcessor(itemObj) {
   const nonEmptyColumns = Object.keys(itemObj).filter(column => {
     let val = itemObj[column];
     if (val === 0 || val) return true;
+    // TODO : Above is a hack. Fix.
     return false;
   });
   const values = nonEmptyColumns.map(cname => {
@@ -158,10 +159,12 @@ export function createOrder(order, details = []) {
     (${values.join(',')})`
       );
       if (r && r.lastID) {
+        // TODO : Above is a hack. Fix.
         id = r.lastID;
         const detailsInsertionPromises = details.map(detail => {
           const { nonEmptyColumns, values } = sqlObjectProcessor(detail);
-          let orderDetailsid = id && detail.productid ? `${id}/${detail.productid}` : '';
+          let orderDetailsid = detail.productid ? `${id}/${detail.productid}` : '';
+          // TODO : Above is a hack. Fix.
           nonEmptyColumns.push('orderid');
           values.push(id);
           if (orderDetailsid) {
