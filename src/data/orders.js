@@ -123,6 +123,21 @@ export async function getOrderWithDetails(id) {
   return [order, items];
 }
 
+function sqlObjectProcessor(itemObj) {
+  const nonEmptyColumns = Object.keys(itemObj).filter(column => {
+    let val = itemObj[column];
+    if (val === 0 || val) return true;
+    return false;
+  });
+  const values = nonEmptyColumns.map(cname => {
+    let val = itemObj[cname];
+    if (typeof val === 'string') {
+      val = `'${val}'`;
+    }
+    return val;
+  });
+  return { nonEmptyColumns, values };
+}
 /**
  * Create a new CustomerOrder record
  * @param {Pick<Order, 'employeeid' | 'customerid' | 'shipcity' | 'shipaddress' | 'shipname' | 'shipvia' | 'shipregion' | 'shipcountry' | 'shippostalcode' | 'requireddate' | 'freight'>} order data for the new CustomerOrder
@@ -131,18 +146,9 @@ export async function getOrderWithDetails(id) {
  */
 export async function createOrder(order, details = []) {
   const db = await getDb();
+  const { nonEmptyColumns, values } = sqlObjectProcessor(order);
 
-  const nonEmptyColumns = Object.keys(order).filter(column => {
-    if (order[column]) return true;
-    return false;
-  });
-  const values = nonEmptyColumns.map(cname => {
-    let val = order[cname];
-    if (typeof val === 'string') {
-      val = `'${val}'`;
-    }
-    return val;
-  });
+  await db.run(sql`BEGIN;`);
   return db
     .run(
       sql`INSERT INTO CustomerOrder
@@ -155,16 +161,30 @@ export async function createOrder(order, details = []) {
       if (r && r.lastID) {
         id = r.lastID;
         const detailsInsertionPromises = details.map(detail => {
+          const { nonEmptyColumns, values } = sqlObjectProcessor(detail);
+          let orderDetailsid = id && detail.productid ? `${id}/${detail.productid}` : '';
+          nonEmptyColumns.push('orderid');
+          values.push(id);
+          if (orderDetailsid) {
+            nonEmptyColumns.push('id');
+            values.push(orderDetailsid);
+          }
           return db.run(
-            sql`INSERT INTO OrderDetail (id,orderid,productid,unitprice,quantity,discount)
-            values (${id}/${detail.productid},${id},${detail.productid},${detail.unitprice},${
-              detail.quantity
-            },${detail.discount});`
+            sql`INSERT INTO OrderDetail (${nonEmptyColumns.join(',')})
+              values
+              (${values.join(',')})`
           );
         });
         await Promise.all(detailsInsertionPromises);
       }
       return { id };
+    })
+    .then(a => {
+      db.run(sql`COMMIT;`);
+      return a;
+    })
+    .catch(e => {
+      db.run(sql`ROLLBACK;`);
     });
 }
 
