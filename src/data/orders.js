@@ -209,5 +209,28 @@ export async function deleteOrder(id) {
  * @returns {Promise<Partial<Order>>} the order
  */
 export async function updateOrder(id, data, details = []) {
-  return Promise.reject('Orders#updateOrder() NOT YET IMPLEMENTED');
+  const db = await getDb();
+  await db.run(sql`BEGIN`);
+  await db.run(
+    sql`UPDATE CustomerOrder SET employeeid=${data.employeeid},customerid='${
+      data.customerid
+    }',shipcity='${data.shipcity}',shipaddress='${data.shipaddress}',shipname='${
+      data.shipname
+    }',shipvia=${data.shipvia},shipregion='${data.shipregion}',shipcountry='${
+      data.shipcountry
+    }',shippostalcode='${data.shippostalcode}',requireddate='${data.requireddate}',freight='${
+      data.freight
+    }' WHERE id=$1`,
+    id
+  );
+  const detailsUpdationPromises = details.map(detail => {
+    return db.run(
+      sql`UPDATE OrderDetail SET productid=${detail.productid},quantity=${
+        detail.quantity
+      },unitprice=${detail.unitprice},discount=${detail.discount}`
+    );
+  });
+  await Promise.all(detailsUpdationPromises);
+  await db.run(sql`COMMIT;`);
+  // return Promise.reject('Orders#updateOrder() NOT YET IMPLEMENTED');
 }
