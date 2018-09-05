@@ -211,26 +211,57 @@ export async function deleteOrder(id) {
 export async function updateOrder(id, data, details = []) {
   const db = await getDb();
   await db.run(sql`BEGIN`);
+  // await db.run(
+  //   sql`UPDATE CustomerOrder SET employeeid=${data.employeeid},customerid='${
+  //     data.customerid
+  //   }',shipcity='${data.shipcity}',shipaddress='${data.shipaddress}',shipname='${
+  //     data.shipname
+  //   }',shipvia=${data.shipvia},shipregion='${data.shipregion}',shipcountry='${
+  //     data.shipcountry
+  //   }',shippostalcode='${data.shippostalcode}',requireddate='${data.requireddate}',freight='${
+  //     data.freight
+  //   }' WHERE id=$1`,
+  //   id
+  // );
+  // const detailsUpdationPromises = details.map(detail => {
+  //   return db.run(
+  //     sql`UPDATE OrderDetail SET productid=${detail.productid},quantity=${
+  //       detail.quantity
+  //     },unitprice=${detail.unitprice},discount=${detail.discount}`
+  //   );
+  // });
+  // await Promise.all(detailsUpdationPromises);
+
   await db.run(
-    sql`UPDATE CustomerOrder SET employeeid=${data.employeeid},customerid='${
-      data.customerid
-    }',shipcity='${data.shipcity}',shipaddress='${data.shipaddress}',shipname='${
-      data.shipname
-    }',shipvia=${data.shipvia},shipregion='${data.shipregion}',shipcountry='${
-      data.shipcountry
-    }',shippostalcode='${data.shippostalcode}',requireddate='${data.requireddate}',freight='${
-      data.freight
-    }' WHERE id=$1`,
+    sql`UPDATE CustomerOrder SET 
+    employeeid=$1,customerid=$2,shipcity=$3,shipaddress=$4,shipname=$5,shipvia=$6,shipregion=$7,shipcountry=$8,shippostalcode=$9,requireddate=$10,freight=$11 WHERE id=$12`,
+    data.employeeid,
+    data.customerid,
+    data.shipcity,
+    data.shipaddress,
+    data.shipname,
+    data.shipvia,
+    data.shipregion,
+    data.shipcountry,
+    data.shippostalcode,
+    data.requireddate,
+    data.freight,
     id
   );
+
   const detailsUpdationPromises = details.map(detail => {
     return db.run(
-      sql`UPDATE OrderDetail SET productid=${detail.productid},quantity=${
-        detail.quantity
-      },unitprice=${detail.unitprice},discount=${detail.discount}`
+      sql`UPDATE OrderDetail SET 
+      productid=$1,unitprice=$2,quantity=$3,discount=$4 WHERE orderid=$5`,
+      detail.productid,
+      detail.unitprice,
+      detail.quantity,
+      detail.discount,
+      id
     );
   });
   await Promise.all(detailsUpdationPromises);
+
   await db.run(sql`COMMIT;`);
   // return Promise.reject('Orders#updateOrder() NOT YET IMPLEMENTED');
 }
