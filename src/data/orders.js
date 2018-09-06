@@ -160,10 +160,11 @@ export function createOrder(order, details = []) {
       );
       if (r && r.lastID) {
         // TODO : Above is a hack. Fix.
+        let cnt = 1;
         id = r.lastID;
         const detailsInsertionPromises = details.map(detail => {
           const { nonEmptyColumns, values } = sqlObjectProcessor(detail);
-          let orderDetailsid = detail.productid ? `${id}/${detail.productid}` : '';
+          let orderDetailsid = detail.productid ? `${String(id)}/${String(cnt++)}` : '';
           // TODO : Above is a hack. Fix.
           nonEmptyColumns.push('orderid');
           values.push(id);
