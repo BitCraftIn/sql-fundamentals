@@ -1,0 +1,1 @@
+-- Put your PostgreSQL "down" migration here
