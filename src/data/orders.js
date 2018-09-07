@@ -156,6 +156,7 @@ export async function createOrder(order, details = []) {
       order.requireddate,
       order.freight
     );
+
     if (!result || typeof result.lastID === 'undefined')
       throw new Error('Order insertion did not return an id!');
     let ct = 1;
@@ -198,5 +199,18 @@ export async function deleteOrder(id) {
  * @returns {Promise<Partial<Order>>} the order
  */
 export async function updateOrder(id, data, details = []) {
-  return Promise.reject('Orders#updateOrder() NOT YET IMPLEMENTED');
+  const db = await getDb();
+  let result = await db.run(
+    sql`Update CustomerOrder set freight=${data.freight},shipaddress='${
+      data.shipaddress
+    }',shipname='${data.shipname}',requireddate='${data.requireddate}' where id =${id}`
+  );
+  if (!result || typeof result.lastID === 'undefined')
+    throw new Error('Order insertion did not return an id!');
+  let orderResult = details.map(x => {
+    return db.run(sql`Update OrderDetail set discount=${x.discount} where orderid=${id}`);
+  });
+  await Promise.all(orderResult);
+
+  return { id: result.lastID };
 }
