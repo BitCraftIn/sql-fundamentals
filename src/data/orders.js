@@ -129,37 +129,55 @@ export async function getOrderWithDetails(id) {
  */
 export async function createOrder(order, details = []) {
   const db = await getDb();
-  let result = await db.run(
-    sql`Insert Into CustomerOrder (employeeid,customerid,shipcity,shipaddress,shipname,shipvia,shipregion,shipcountry,shippostalcode,requireddate,freight) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-    order.employeeid,
-    order.customerid,
-    order.shipcity,
-    order.shipaddress,
-    order.shipname,
-    order.shipvia,
-    order.shipregion,
-    order.shipcountry,
-    order.shippostalcode,
-    order.requireddate,
-    order.freight
-  );
-  if (!result || typeof result.lastID === 'undefined')
-    throw new Error('Order insertion did not return an id!');
-  let ct = 1;
-  let orderId = result.lastID;
-  let detailsResult = details.map(x => {
-    return db.run(
-      sql`Insert Into OrderDetail (id,orderid,productid, unitprice, quantity, discount) values ($1,$2,$3,$4,$5,$6)`,
-      `${orderId}/${ct++}`,
-      orderId,
-      x.productid,
-      x.unitprice,
-      x.quantity,
-      x.discount
+  // let result;
+  // try {
+  //   db.run(sql`Begin `);
+  //   result = await db.all(sql`${joinClauses}`);
+
+  //   db.run(sql`Commit`);
+  //   throw 'Error';
+  //   // return result;
+  // } catch (error) {
+  //   db.run(sql`RollBack`);
+  // }
+  try {
+    await db.run(sql`Begin`);
+    let result = await db.run(
+      sql`Insert Into CustomerOrder (employeeid,customerid,shipcity,shipaddress,shipname,shipvia,shipregion,shipcountry,shippostalcode,requireddate,freight) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      order.employeeid,
+      order.customerid,
+      order.shipcity,
+      order.shipaddress,
+      order.shipname,
+      order.shipvia,
+      order.shipregion,
+      order.shipcountry,
+      order.shippostalcode,
+      order.requireddate,
+      order.freight
     );
-  });
-  await Promise.all(detailsResult);
-  return { id: result.lastID };
+    if (!result || typeof result.lastID === 'undefined')
+      throw new Error('Order insertion did not return an id!');
+    let ct = 1;
+    let orderId = result.lastID;
+    let detailsResult = details.map(x => {
+      return db.run(
+        sql`Insert Into OrderDetail (id,orderid,productid, unitprice, quantity, discount) values ($1,$2,$3,$4,$5,$6)`,
+        `${orderId}/${ct++}`,
+        orderId,
+        x.productid,
+        x.unitprice,
+        x.quantity,
+        x.discount
+      );
+    });
+    await Promise.all(detailsResult);
+    await db.run(sql`Commit`);
+    return { id: result.lastID };
+  } catch (error) {
+    db.run(sql`RollBack`);
+    throw error;
+  }
 }
 
 /**
