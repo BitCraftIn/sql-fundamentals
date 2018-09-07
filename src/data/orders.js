@@ -201,9 +201,9 @@ export async function deleteOrder(id) {
 export async function updateOrder(id, data, details = []) {
   const db = await getDb();
   let result = await db.run(
-    sql`Update CustomerOrder set freight=${data.freight},shipaddress='${
+    sql`Update CustomerOrder set freight=${data.freight},shipaddress="${
       data.shipaddress
-    }',shipname='${data.shipname}',requireddate='${data.requireddate}' where id =${id}`
+    }",shipname='${data.shipname}',requireddate='${data.requireddate}' where id =${id}`
   );
   if (!result || typeof result.lastID === 'undefined')
     throw new Error('Order insertion did not return an id!');
