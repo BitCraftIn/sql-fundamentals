@@ -21,8 +21,8 @@ const ALL_EMPLOYEES_COLUMNS = [
 export async function getAllEmployees() {
   const db = await getDb();
   return await db.all(sql`
-SELECT ${ALL_EMPLOYEES_COLUMNS.join(',')}
-FROM Employee`);
+SELECT ${ALL_EMPLOYEES_COLUMNS.map(ename => `e.${ename}`).join(',')}, count(*) as ordercount
+FROM Employee as e join CustomerOrder as co On e.id = co.employeeid group by e.id`);
 }
 
 /**

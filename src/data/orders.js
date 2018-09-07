@@ -87,11 +87,11 @@ export async function getCustomerOrders(customerId, opts = {}) {
 export async function getOrder(id) {
   const db = await getDb();
   //experiment
-  let joinClauses = sql`SELECT co.*,c.contactname as customername, e.firstname as employeename
+  let joinClauses = sql`SELECT sum((1 - od.discount) * od.unitprice * od.quantity) as subtotal, co.*,c.contactname as customername, e.firstname as employeename
   FROM CustomerOrder as co 
+  inner join OrderDetail as od on od.orderid = co.id
   Left Join Customer as c On  co.customerid = c.id 
   Left Join Employee as e On co.employeeid = e.id WHERE co.id = ${id}`;
-  // return await db.get(joinClauses);
   return await db.get(sql`${joinClauses}`);
 }
 

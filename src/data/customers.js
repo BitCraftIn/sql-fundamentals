@@ -24,13 +24,13 @@ export async function getAllCustomers(options = {}) {
   const db = await getDb();
   let whereClauses = '';
   if (options.filter) {
-    whereClauses = sql`WHERE (lower(companyName) like lower("%${
+    whereClauses = sql`WHERE (lower(c.companyName) like lower("%${
       options.filter
-    }%")) OR (lower(contactName) like lower("%${options.filter}%")) `;
+    }%")) OR (lower(c.contactName) like lower("%${options.filter}%")) `;
   }
   return await db.all(sql`
-SELECT ${ALL_CUSTOMERS_COLUMNS.join(',')}
-FROM Customer ${whereClauses}`);
+SELECT ${ALL_CUSTOMERS_COLUMNS.map(cname => `c.${cname}`).join(',')}, count(co.id) as ordercount
+FROM Customer as c join CustomerOrder as co On c.id = co.customerid  ${whereClauses} group by c.id `);
 }
 
 /**
