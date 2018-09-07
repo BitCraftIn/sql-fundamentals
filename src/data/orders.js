@@ -128,7 +128,38 @@ export async function getOrderWithDetails(id) {
  * @returns {Promise<{id: string}>} the newly created order
  */
 export async function createOrder(order, details = []) {
-  return Promise.reject('Orders#createOrder() NOT YET IMPLEMENTED');
+  const db = await getDb();
+  let result = await db.run(
+    sql`Insert Into CustomerOrder (employeeid,customerid,shipcity,shipaddress,shipname,shipvia,shipregion,shipcountry,shippostalcode,requireddate,freight) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+    order.employeeid,
+    order.customerid,
+    order.shipcity,
+    order.shipaddress,
+    order.shipname,
+    order.shipvia,
+    order.shipregion,
+    order.shipcountry,
+    order.shippostalcode,
+    order.requireddate,
+    order.freight
+  );
+  if (!result || typeof result.lastID === 'undefined')
+    throw new Error('Order insertion did not return an id!');
+  let ct = 1;
+  let orderId = result.lastID;
+  let detailsResult = details.map(x => {
+    return db.run(
+      sql`Insert Into OrderDetail (id,orderid,productid, unitprice, quantity, discount) values ($1,$2,$3,$4,$5,$6)`,
+      `${orderId}/${ct++}`,
+      orderId,
+      x.productid,
+      x.unitprice,
+      x.quantity,
+      x.discount
+    );
+  });
+  await Promise.all(detailsResult);
+  return { id: result.lastID };
 }
 
 /**
@@ -137,7 +168,8 @@ export async function createOrder(order, details = []) {
  * @returns {Promise<any>}
  */
 export async function deleteOrder(id) {
-  return Promise.reject('Orders#deleteOrder() NOT YET IMPLEMENTED');
+  const db = await getDb();
+  return await db.run(sql`Delete from CustomerOrder where id=$1`, id);
 }
 
 /**
