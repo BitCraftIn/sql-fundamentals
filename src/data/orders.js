@@ -103,7 +103,7 @@ export async function getOrder(id) {
 export async function getOrderDetails(id) {
   const db = await getDb();
   let joinClauses = '';
-  joinClauses = sql`SELECT od.*,od.unitprice * od.quantity as price, p.productname 
+  joinClauses = sql`EXPLAIN SELECT od.*,od.unitprice * od.quantity as price, p.productname 
   FROM OrderDetail as od
   Left Join Product as p On od.productid = p.id
   WHERE od.orderid = ${id}`;
